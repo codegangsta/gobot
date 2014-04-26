@@ -14,6 +14,8 @@ import (
 
 type startFuncAlias func(*api)
 
+type Command func(params map[string]interface{}) []interface{}
+
 // Optional restful API through the master to access
 // all the robots.
 type api struct {
@@ -100,7 +102,13 @@ func Api(bot *Master) *api {
 	robot_command_route := "/robots/:robotname/commands/:command"
 
 	m.Get(robot_command_route, func(params martini.Params, res http.ResponseWriter, req *http.Request) {
-		a.executeRobotCommand(params["robotname"], params["command"], res, req)
+    bot := a.master.FindRobot(params["robotname"])
+    if c := bot.GetCommand(params["command"]]); c != nil {
+      c(res, req)
+    } else {
+      http.Error(res, "Not Found", 404)
+    }
+		// a.executeRobotCommand(params["robotname"], params["command"], res, req)
 	})
 	m.Post(robot_command_route, func(params martini.Params, res http.ResponseWriter, req *http.Request) {
 		a.executeRobotCommand(params["robotname"], params["command"], res, req)
@@ -262,16 +270,14 @@ func (a *api) executeRobotCommand(robotname string, commandname string, res http
 	body := make(map[string]interface{})
 	json.Unmarshal(data, &body)
 	robot := a.master.FindRobot(robotname)
+
 	in := make([]reflect.Value, 1)
 	body["robotname"] = robotname
 	in[0] = reflect.ValueOf(body)
+
 	command := robot.Commands[commandname]
 	if command != nil {
-		ret := make([]interface{}, 0)
-		for _, v := range reflect.ValueOf(robot.Commands[commandname]).Call(in) {
-			ret = append(ret, v.Interface())
-		}
-		data, _ = json.Marshal(ret)
+		data, _ = json.Marshal(command(body))
 	} else {
 		data, _ = json.Marshal([]interface{}{"Unknown Command"})
 	}

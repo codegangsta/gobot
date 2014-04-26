@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"net/http"
 	"time"
 )
 
@@ -11,6 +12,7 @@ type Robot struct {
 	Connections   []Connection           `json:"connections"`
 	Devices       []Device               `json:"devices"`
 	Name          string                 `json:"name"`
+  // Commands is a command mounted to the gobot api
 	Commands      map[string]interface{} `json:"-"`
 	RobotCommands []string               `json:"commands"`
 	Work          func()                 `json:"-"`
